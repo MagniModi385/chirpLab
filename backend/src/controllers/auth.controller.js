@@ -109,7 +109,7 @@
                         !nativeLanguage && "nativeLanguage",
                         !learningLanguage &&"learningLanguage",
                         !location && "location",
-                    ],
+                    ].filter(Boolean),
                     });
                 }
           const updatedUser=await User.findByIdAndUpdate(userId,
@@ -117,9 +117,21 @@
                     ...req.body,isOnboarded:true,
                 },{new:true});
                 if(!updatedUser) return res.status(404).json({message:"User not found"});
-                //todo update user info in stream chat
+                //todo update user info in stream chat  
+           try {
+             await upsertStreamUser(
+                {
+                id: updatedUser._id.toString(),
+                name:updatedUser.fullName,
+                image: updatedUser.profilePic || "",
+                })
+                console.log(`Stream user updated after onboarding for ${updatedUser.fullName}`);
+           } catch (streamError) {
+            console.log("Error in updating Stream user during onboarding:",streamError.message);
+           }
+            res.status(200).json({success:true,user:updatedUser});
         } catch (error) {
-            
+            console.error("Onboarding error",error);
+            res.status(500).json({message:"Internal server error"});
         }
-
     }
