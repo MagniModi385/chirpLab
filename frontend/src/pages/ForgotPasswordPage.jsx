@@ -9,7 +9,7 @@ const ForgotPasswordPage = () => {
     setStatus("Sending...");
         setEmail("");
     try {
-      const res = await fetch("http://localhost:5002/api/auth/forgot-password", {
+      const res = await fetch("https://chirplab.onrender.com/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
