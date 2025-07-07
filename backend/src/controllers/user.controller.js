@@ -8,7 +8,7 @@ export async function getRecommendedUsers(req,res)
             const recommendedUsers= await User.find({
                 $and :[
                     {_id:{$ne: currentUserId}},//exclude current user i.e exclude oneself
-                    {$id:{$nin:currentUser.friends}},// exclude current user's friends
+                    {_id:{$nin:currentUser.friends}},// exclude current user's friends
                     {isOnboarded:true}
                 ]
             })
@@ -23,7 +23,7 @@ export async function getMyFriends(req,res)
     {
 try {
     const user=await User.findById(req.user.id).select("friends").populate(
-        "friends","fullName profilePic nativeLanguage learningLanguage"
+        "friends","fullName profilePic coreLanguage learningLanguage"
     );
     res.status(200).json(user.friends);
 } catch (error) {
@@ -38,7 +38,7 @@ export async function sendFriendRequest(req,res) {
         //prevent sending requests to your selves 
         if(myId===recipientId) return res.status(400).json({message:"You cant send friend requests to yourself"});
         //check if recipient exists
-        const recipient=await user.findById(recipientId);
+        const recipient=await User.findById(recipientId);
         if(!recipient) return res.status(404).json({message:"Recipient not found"});
         //check if recipient is already a friend or not
         if(recipient.friends.includes(myId)) return res.status(400).json({message:"Recipient is already a friend"});
@@ -100,12 +100,12 @@ export async function getFriendRequest(req,res)
             {
                 recipient:req.user.id,
                 status:"pending",
-            }).populate("sender","fullName profilePic nativeLanguage learningLanguage");
+            }).populate("sender","fullName profilePic coreLanguage learningLanguage");
         const acceptedReqs= await FriendRequest.find(
             {
                 recipient:req.user.id,
                 status:"accepted",
-            }).populate("recipient","fullName profilePic");
+            }).populate("sender","fullName profilePic").lean();
      res.status(200).json({incomingReqs,acceptedReqs});
 
     } catch (error) {
@@ -119,7 +119,7 @@ export async function getOutgoingFriendReqs(req,res)
         const outgoingRequests=await FriendRequest.find({
             sender:req.user.id,
             status:"pending",
-        }).populate("recipient","fullName profilePic nativeLanguage learningLanguage");
+        }).populate("recipient","fullName profilePic coreLanguage learningLanguage");
         res.status(200).json(outgoingRequests);
     } catch (error) {
         console.error("Error in getOutgoingFriendRequest controller",error);

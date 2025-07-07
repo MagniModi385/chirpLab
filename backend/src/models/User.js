@@ -27,10 +27,14 @@ const userSchema=new mongoose.Schema({
         type:String,
         default:"",
     },
-     nativeLanguage:
+     coreLanguage:
     {
         type:String,
         default:"",
+    },
+    learningLanguage: {
+      type: String,
+      default: "",
     },
     isOnboarded:
     {

@@ -1,6 +1,62 @@
     import User from "../models/User.js";
     import jwt from "jsonwebtoken";
     import {upsertStreamUser} from "../lib/stream.js";
+    import { sendEmail } from "../utils/sendEmail.js";
+    import crypto from 'crypto';
+    import bcrypt from 'bcryptjs';
+export const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+
+  // 1. Simple email validation (no external library)
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ 
+      success: false,
+      message: "Please provide a valid email address" 
+    });
+  }
+
+  try {
+    // 2. Case-insensitive email search
+    const user = await User.findOne({ 
+      email: { $regex: new RegExp(`^${email}$`, 'i') } 
+    });
+
+    // 3. Always return same message for security
+    const responseMessage = "If this email exists, you'll receive a temporary password";
+    if (!user) {
+      return res.status(200).json({ 
+        success: true,
+        message: responseMessage
+      });
+    }
+
+    // 4. Generate temp password
+    const tempPassword = crypto.randomBytes(4).toString('hex');
+    user.password = tempPassword; // Will be hashed by pre-save hook
+    user.passwordChangedAt = Date.now();
+    
+    await user.save();
+
+    // 5. Send email (fire-and-forget)
+    sendEmail(
+      email,
+      "Your Temporary Password",
+      `YOUR TEMPORARY PASSWORD: ${tempPassword}\nWe are in the process of making a reset Link.\nSo please bear with us.`
+    ).catch(error => console.error("Email send error:", error));
+
+    res.status(200).json({
+      success: true,
+      message: responseMessage
+    });
+
+  } catch (error) {
+    console.error("Password reset error:", error);
+    res.status(500).json({ 
+      success: false,
+      message: "Internal server error" 
+    });
+  }
+};
     export async function signup(req,res)
     {
     const{email,password,fullName}=req.body;
@@ -97,8 +153,8 @@
     {
         try {
             const userId=req.user._id;
-            const{fullName,bio,nativeLanguage,learningLanguage,location}=req.body;
-            if(!fullName || !bio || !nativeLanguage || !learningLanguage || !location)
+            const{fullName,bio,coreLanguage,learningLanguage,location}=req.body;
+            if(!fullName || !bio || !coreLanguage || !learningLanguage || !location)
                 {
                     return res.status(400).json({
                     message:"All fields are required",
@@ -106,7 +162,7 @@
                     [
                         !fullName && "fullName",
                         !bio && "bio",
-                        !nativeLanguage && "nativeLanguage",
+                        !coreLanguage && "coreLanguage",
                         !learningLanguage &&"learningLanguage",
                         !location && "location",
                     ].filter(Boolean),

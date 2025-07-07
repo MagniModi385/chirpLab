@@ -1,5 +1,5 @@
 import express from "express";
-import { signup,login,logout,onboard } from "../controllers/auth.controller.js";
+import { signup,login,logout,onboard,forgotPassword } from "../controllers/auth.controller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 const router=express.Router();
 router.post('/signup',signup);
@@ -7,6 +7,7 @@ router.post('/login',login);
 //post for logout because post changes the server state so logging out will destroy the session
 router.post('/logout',logout);
 router.post('/onboarding',protectRoute,onboard);
+router.post('/forgot-password', forgotPassword);
 //check if user is logged in 
 router.get("/me",protectRoute,(req,res)=>
     {
